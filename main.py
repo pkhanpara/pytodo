@@ -10,7 +10,7 @@ inmemdb = InMem(lists={})
 
 @app.get("/")
 def read_root():
-    return {"docs": "/docs"}
+    return {"lists": list(inmemdb.lists.keys())}
 
 
 @app.get("/list")
@@ -30,3 +30,13 @@ def create_list(new_list: NewListModel):
 
 
 # TODO get items from a list in path param
+
+
+@app.post("/list/{list_name}")
+def update_list(list_name: str, item_name):
+    if list_name.name not in inmemdb.lists:
+        pass
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"{list_name.name} list already exists"
+        )  # note this is a Fastapi httpexception

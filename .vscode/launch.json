@@ -5,13 +5,36 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Module",
-            "type": "python",
+            "name": "Launch Uvicorn Backend",
+            "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
             "args": [
                 "main:app",
                 "--reload"
+            ]
+        },
+        {
+            "name": "Launch React Frontend",
+            "command": "npm run start",
+            "request": "launch",
+            "type": "node-terminal",
+            "cwd": "${workspaceRoot}/pytodo-frontend",
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Browser to Frontend",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "PyTodo - Server + Client",
+            "configurations": [
+                "Launch Uvicorn Backend",
+                "Launch React Frontend",
             ]
         }
     ]
