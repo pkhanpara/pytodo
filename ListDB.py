@@ -15,6 +15,7 @@ class InMemList:
     list_items: List[ListItem]
 
 
+# TODO do we really need dataclass? Would list of list be fine to use
 @dataclass
 class InMem:
     lists: Dict[str, InMemList]

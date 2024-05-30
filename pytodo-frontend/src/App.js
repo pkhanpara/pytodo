@@ -25,7 +25,9 @@ function App() {
         <div className="App">
             {
                 lists.map((list, index) => (
-                    <p key={index}>{list}</p>
+                    <p key={index}>
+                        <a className="App-link" href={"http://localhost:8000/list/" + list}> {list} </a>
+                    </p>
                 ))
             }
             <header className="App-header">
@@ -40,7 +42,7 @@ function App() {
                 </a>
             </header>
 
-        </div>
+        </div >
 
     );
 }

@@ -23,7 +23,7 @@ todo_list = InMemList("todo list", [todo1, todo2])
 
 inmemdb.lists["todo list"] = todo_list
 inmemdb.lists["grocery ies"] = grocery_list
-
+inmemdb.lists["hacked list"] = None
 ## test data end
 
 
@@ -48,15 +48,23 @@ def create_list(new_list: NewListModel):
         )  # note this is a Fastapi httpexception
 
 
-# TODO get items from a list in path param
+@app.get("/list/{list_name}")
+def get_items_from_list(list_name: str):
+    if list_name in inmemdb.lists:
+        # return inmemdb.lists[list_name].list_items
+        return inmemdb.lists[list_name]
+    else:
+        raise HTTPException(
+            status_code=404, detail=f"{list_name} list does not exists!"
+        )
 
 
 @app.post("/list/{list_name}")
-def update_list(list_name: str, item_name):
-    if list_name.name in inmemdb.lists:
-        print(inmemdb.lists["list_name"])
+def add_item_to_list(list_name: str, item_name):
+    if list_name in inmemdb.lists:
+        print(inmemdb.lists[list_name])
         # TODO add item to the list
     else:
         raise HTTPException(
-            status_code=404, detail=f"{list_name.name} list already exists"
+            status_code=404, detail=f"{list_name} list does not exists!"
         )  # note this is a Fastapi httpexception
