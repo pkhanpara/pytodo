@@ -12,7 +12,7 @@ app.add_middleware(CORSMiddleware, allow_origins=origins)
 
 inmemdb = InMem(lists={})
 
-##  test data
+##  prime the database
 apple = ListItem("apple", False)
 yogurt = ListItem("yogurt", False)
 grocery_list = InMemList("groceryies", [apple, yogurt])
@@ -24,7 +24,7 @@ todo_list = InMemList("todo list", [todo1, todo2])
 inmemdb.lists["todo list"] = todo_list
 inmemdb.lists["grocery ies"] = grocery_list
 inmemdb.lists["hacked list"] = None
-## test data end
+## priming ends
 
 
 @app.get("/")
