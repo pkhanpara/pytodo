@@ -84,9 +84,23 @@ def add_item_to_list(list_name: str, item: ListItemModel):
 
 @app.put("/list/{list_name}")
 def update_item_in_list(list_name: str, item: ListItemModel):
+    item_found = False
     if list_name in inmemdb.lists:
-        if item in inmemdb.lists[list_name].list_items:
-            inmemdb.lists[list_name].list_items
+        for i, l_item in enumerate(inmemdb.lists[list_name].items):
+            if item.id == l_item.id:
+                inmemdb.lists[list_name].items[i] = item
+                item_found = True
+                break
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{list_name} list does not exists to update {item}!",
+        )
+    if not item_found:
+        raise HTTPException(
+            status_code=404, detail=f"{item} not found in the {list_name}"
+        )
+    return inmemdb.lists[list_name]
 
 
 # TODO Backend: add PUT/update item to checked
