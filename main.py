@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException, Response
 from ListModel import ListModel, InMemDb, NewListModel, ListItemModel
 from ListDB import InMem, InMemList, ListItem
 from fastapi.middleware.cors import CORSMiddleware
+from uuid import uuid4
 
 app = FastAPI()
 # API doc is here http://127.0.0.1:8000/docs#/
@@ -13,13 +14,13 @@ app.add_middleware(CORSMiddleware, allow_origins=origins)
 inmemdb = InMem(lists={})
 
 ##  prime the database
-apple = ListItem("apple", False)
-yogurt = ListItem("yogurt", False)
-grocery_list = InMemList("groceryies", [apple, yogurt])
+apple = ListItem("apple", False, uuid4())
+yogurt = ListItem("yogurt", False, uuid4())
+grocery_list = InMemList("groceryies", [apple, yogurt], uuid4())
 
-todo1 = ListItem("write new feature", True)
-todo2 = ListItem("test the feature", False)
-todo_list = InMemList("todo list", [todo1, todo2])
+todo1 = ListItem("write new feature", True, uuid4())
+todo2 = ListItem("test the feature", False, uuid4())
+todo_list = InMemList("todo list", [todo1, todo2], uuid4())
 
 inmemdb.lists["todo list"] = todo_list
 inmemdb.lists["grocery ies"] = grocery_list
@@ -41,8 +42,9 @@ def get_all_lists():
 @app.post("/list")
 def create_list(new_list: NewListModel):
     if new_list.name not in inmemdb.lists:
-        inmemdb.lists[new_list.name] = InMemList(new_list.name, [])
-        return {"list": new_list.name, "status": "ok"}
+        new_list = InMemList(new_list.name, [], uuid4())
+        inmemdb.lists[new_list.name] = new_list
+        return new_list
     else:
         raise HTTPException(
             status_code=404, detail=f"{new_list.name} list already exists"
@@ -72,7 +74,7 @@ def get_items_from_list(list_name: str):
 @app.post("/list/{list_name}")
 def add_item_to_list(list_name: str, item: ListItemModel):
     if list_name in inmemdb.lists:
-        inmemdb.lists[list_name].list_items.append(item)
+        inmemdb.lists[list_name].items.append(item)
         return inmemdb.lists[list_name]
     else:
         raise HTTPException(
@@ -80,5 +82,16 @@ def add_item_to_list(list_name: str, item: ListItemModel):
         )  # note this is a Fastapi httpexception
 
 
-# TODO add PUT/update item to checked
-# TODO remove an item from the list
+@app.put("/list/{list_name}")
+def update_item_in_list(list_name: str, item: ListItemModel):
+    if list_name in inmemdb.lists:
+        if item in inmemdb.lists[list_name].list_items:
+            inmemdb.lists[list_name].list_items
+
+
+# TODO Backend: add PUT/update item to checked
+# TODO Backend: remove an item from the list
+# TODO Frontend: Add UI to add list
+# TODO Frontend: ADD buttons to delete a list
+# TODO Frontend: ADD UI to display items in a list
+# TODO Frontend: Add way to update the list
