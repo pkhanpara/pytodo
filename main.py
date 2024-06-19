@@ -103,8 +103,27 @@ def update_item_in_list(list_name: str, item: ListItemModel):
     return inmemdb.lists[list_name]
 
 
-# TODO Backend: add PUT/update item to checked
-# TODO Backend: remove an item from the list
+@app.delete("/list/{list_name}")
+def remove_item_in_list(list_name: str, item: ListItemModel):
+    item_found = False
+    if list_name in inmemdb.lists:
+        for i, l_item in enumerate(inmemdb.lists[list_name].items):
+            if item.id == l_item.id:
+                del inmemdb.lists[list_name].items[i]
+                item_found = True
+                break
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail=f"{list_name} list does not exists to remove {item}!",
+        )
+    if not item_found:
+        raise HTTPException(
+            status_code=404, detail=f"{item} not found in the {list_name}"
+        )
+    return {}
+
+
 # TODO Frontend: Add UI to add list
 # TODO Frontend: ADD buttons to delete a list
 # TODO Frontend: ADD UI to display items in a list
