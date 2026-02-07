@@ -2,6 +2,8 @@
   "name": "pytodo-frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "proxy": "http://10.0.0.40:8000",
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -16,6 +18,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "lint": "eslint --ext .js,.jsx src/",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -35,5 +38,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "eslint": "^9.34.0",
+    "eslint-plugin-react": "^7.37.5"
   }
 }
