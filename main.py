@@ -1,6 +1,5 @@
-from typing import Union, List
-from fastapi import FastAPI, HTTPException, Response
-from ListModel import ListModel, InMemDb, NewListModel, ListItemModel
+from fastapi import FastAPI, HTTPException
+from ListModel import NewListModel, ListItemModel
 from ListDB import InMem, InMemList, ListItem
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import uuid4
