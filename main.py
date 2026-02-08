@@ -1,133 +1,126 @@
-from fastapi import FastAPI, HTTPException
-from ListModel import NewListModel, ListItemModel
-from ListDB import InMem, InMemList, ListItem
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List as TypingList
+
+from ListModel import NewListModel, ListItemModel, ListModel
+from database import get_db, Base, engine
+from orm_models import List as ORMList, Item as ORMItem
+
+from sqlalchemy.orm import Session
 from uuid import uuid4
 
 app = FastAPI()
 # API doc is here http://127.0.0.1:8000/docs#/
-# to enable CORS
 origins = ["http://localhost:3000"]
 app.add_middleware(CORSMiddleware, allow_origins=origins)
 
-inmemdb = InMem(lists={})
+# Create tables on startup
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
 
-##  prime the database
-apple = ListItem("apple", False, uuid4())
-yogurt = ListItem("yogurt", False, uuid4())
-grocery_list = InMemList("groceryies", [apple, yogurt], uuid4())
+# Helper to convert ORM List to Pydantic ListModel
+def orm_to_pydantic(orm_list: ORMList) -> ListModel:
+    items = [
+        ListItemModel(
+            name=item.name,
+            checkmark=item.checkmark,
+            id=item.id,
+        )
+        for item in orm_list.items
+    ]
+    return ListModel(name=orm_list.name, items=items, id=orm_list.id)
 
-todo1 = ListItem("write new feature", True, uuid4())
-todo2 = ListItem("test the feature", False, uuid4())
-todo_list = InMemList("todo list", [todo1, todo2], uuid4())
-
-inmemdb.lists["todo list"] = todo_list
-inmemdb.lists["grocery ies"] = grocery_list
-inmemdb.lists["hacked list"] = None
-## priming ends
-
-
-# TODO add api versioning /v1/
+# Root endpoint
 @app.get("/")
-def read_root():
-    return {"lists": list(inmemdb.lists.keys())}
+def read_root(db: Session = Depends(get_db)):
+    lists = db.query(ORMList).all()
+    return {"lists": [l.name for l in lists]}
 
-
+# Get all list names (unversioned)
 @app.get("/list")
-def get_all_lists():
-    return {"lists": list(inmemdb.lists.keys())}
+def get_all_lists(db: Session = Depends(get_db)):
+    lists = db.query(ORMList).all()
+    return {"lists": [l.name for l in lists]}
 
 # Versioned endpoint for compatibility with frontend
 @app.get("/v1/lists")
-def get_all_lists_v1():
+def get_all_lists_v1(db: Session = Depends(get_db)):
     """Return all list names under versioned API path."""
-    return {"lists": list(inmemdb.lists.keys())}
+    lists = db.query(ORMList).all()
+    return {"lists": [l.name for l in lists]}
 
-
+# Create a new list
 @app.post("/list")
-def create_list(new_list: NewListModel):
-    if new_list.name not in inmemdb.lists:
-        new_list = InMemList(new_list.name, [], uuid4())
-        inmemdb.lists[new_list.name] = new_list
-        return new_list
-    else:
-        raise HTTPException(
-            status_code=404, detail=f"{new_list.name} list already exists"
-        )  # note this is a Fastapi httpexception
+def create_list(new_list: NewListModel, db: Session = Depends(get_db)):
+    existing = db.query(ORMList).filter(ORMList.name == new_list.name).first()
+    if existing:
+        raise HTTPException(status_code=404, detail=f"{new_list.name} list already exists")
+    orm_list = ORMList(name=new_list.name)
+    db.add(orm_list)
+    db.commit()
+    db.refresh(orm_list)
+    return orm_to_pydantic(orm_list)
 
-
+# Delete a list
 @app.delete("/list")
-def remove_list(old_list: NewListModel):
-    if old_list.name not in inmemdb.lists:
-        return "{}"
-    else:
-        del inmemdb.lists[old_list.name]
-        return "{}"
-
-
-@app.get("/list/{list_name}")
-def get_items_from_list(list_name: str):
-    if list_name in inmemdb.lists:
-        # return inmemdb.lists[list_name].list_items
-        return inmemdb.lists[list_name]
-    else:
-        raise HTTPException(
-            status_code=404, detail=f"{list_name} list does not exists!"
-        )
-
-
-@app.post("/list/{list_name}")
-def add_item_to_list(list_name: str, item: ListItemModel):
-    if list_name in inmemdb.lists:
-        inmemdb.lists[list_name].items.append(item)
-        return inmemdb.lists[list_name]
-    else:
-        raise HTTPException(
-            status_code=404, detail=f"{list_name} list does not exists to add {item}!"
-        )  # note this is a Fastapi httpexception
-
-
-@app.put("/list/{list_name}")
-def update_item_in_list(list_name: str, item: ListItemModel):
-    item_found = False
-    if list_name in inmemdb.lists:
-        for i, l_item in enumerate(inmemdb.lists[list_name].items):
-            if item.id == l_item.id:
-                inmemdb.lists[list_name].items[i] = item
-                item_found = True
-                break
-    else:
-        raise HTTPException(
-            status_code=404,
-            detail=f"{list_name} list does not exists to update {item}!",
-        )
-    if not item_found:
-        raise HTTPException(
-            status_code=404, detail=f"{item} not found in the {list_name}"
-        )
-    return inmemdb.lists[list_name]
-
-
-@app.delete("/list/{list_name}")
-def remove_item_in_list(list_name: str, item: ListItemModel):
-    item_found = False
-    if list_name in inmemdb.lists:
-        for i, l_item in enumerate(inmemdb.lists[list_name].items):
-            if item.id == l_item.id:
-                del inmemdb.lists[list_name].items[i]
-                item_found = True
-                break
-    else:
-        raise HTTPException(
-            status_code=404,
-            detail=f"{list_name} list does not exists to remove {item}!",
-        )
-    if not item_found:
-        raise HTTPException(
-            status_code=404, detail=f"{item} not found in the {list_name}"
-        )
+def remove_list(old_list: NewListModel, db: Session = Depends(get_db)):
+    orm_list = db.query(ORMList).filter(ORMList.name == old_list.name).first()
+    if not orm_list:
+        return {}
+    db.delete(orm_list)
+    db.commit()
     return {}
 
+# Get items from a specific list
+@app.get("/list/{list_name}")
+def get_items_from_list(list_name: str, db: Session = Depends(get_db)):
+    orm_list = db.query(ORMList).filter(ORMList.name == list_name).first()
+    if not orm_list:
+        raise HTTPException(status_code=404, detail=f"{list_name} list does not exist!")
+    return orm_to_pydantic(orm_list)
+
+# Add an item to a list
+@app.post("/list/{list_name}")
+def add_item_to_list(list_name: str, item: ListItemModel, db: Session = Depends(get_db)):
+    orm_list = db.query(ORMList).filter(ORMList.name == list_name).first()
+    if not orm_list:
+        raise HTTPException(status_code=404, detail=f"{list_name} list does not exist to add {item}!")
+    orm_item = ORMItem(name=item.name, checkmark=item.checkmark, list_id=orm_list.id)
+    db.add(orm_item)
+    db.commit()
+    db.refresh(orm_item)
+    db.refresh(orm_list)  # load items relationship
+    return orm_to_pydantic(orm_list)
+
+# Update an existing item in a list
+@app.put("/list/{list_name}")
+def update_item_in_list(list_name: str, item: ListItemModel, db: Session = Depends(get_db)):
+    orm_list = db.query(ORMList).filter(ORMList.name == list_name).first()
+    if not orm_list:
+        raise HTTPException(status_code=404, detail=f"{list_name} list does not exist to update {item}!")
+    orm_item = db.query(ORMItem).filter(ORMItem.id == item.id, ORMItem.list_id == orm_list.id).first()
+    if not orm_item:
+        raise HTTPException(status_code=404, detail=f"{item.id} not found in the {list_name}")
+    orm_item.name = item.name
+    orm_item.checkmark = item.checkmark
+    db.commit()
+    db.refresh(orm_item)
+    db.refresh(orm_list)
+    return orm_to_pydantic(orm_list)
+
+# Delete an item from a list
+@app.delete("/list/{list_name}")
+def remove_item_in_list(list_name: str, item: ListItemModel, db: Session = Depends(get_db)):
+    orm_list = db.query(ORMList).filter(ORMList.name == list_name).first()
+    if not orm_list:
+        raise HTTPException(status_code=404, detail=f"{list_name} list does not exist to remove {item}!")
+    orm_item = db.query(ORMItem).filter(ORMItem.id == item.id, ORMItem.list_id == orm_list.id).first()
+    if not orm_item:
+        raise HTTPException(status_code=404, detail=f"{item.id} not found in the {list_name}")
+    db.delete(orm_item)
+    db.commit()
+    return {}
 
 # TODO Frontend: Add UI to add list
 # TODO Frontend: ADD buttons to delete a list
