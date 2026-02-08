@@ -37,6 +37,12 @@ def read_root():
 def get_all_lists():
     return {"lists": list(inmemdb.lists.keys())}
 
+# Versioned endpoint for compatibility with frontend
+@app.get("/v1/lists")
+def get_all_lists_v1():
+    """Return all list names under versioned API path."""
+    return {"lists": list(inmemdb.lists.keys())}
+
 
 @app.post("/list")
 def create_list(new_list: NewListModel):

@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import React, { useState, useEffect } from 'react';
 import Axios from 'axios';
-import { List } from './List';
+import { List } from './List.js';
 
 function App() {
   const [lists, setLists] = useState([]);
