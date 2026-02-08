@@ -17,9 +17,10 @@ class ListModel(BaseModel):
 
 
 class NewListModel(ListModel):
-    ListModel.name: str
-    ListModel.items = []
-    ListModel.id = Field(default_factory=uuid4)
+    """Model for creating a new list with defaults."""
+    name: str
+    items: List[ListItemModel] = Field(default_factory=list)
+    id: UUID = Field(default_factory=uuid4)
 
 
 class InMemDb(BaseModel):
