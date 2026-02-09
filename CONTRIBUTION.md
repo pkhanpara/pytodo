@@ -58,7 +58,11 @@ The React app runs on `http://localhost:3000` and proxies API requests to the ba
 
 ### Running Tests
 
-Backend: No tests are currently defined – feel free to add `pytest` suites.
+Backend: Run the test suite with:
+
+```bash
+pytest
+```
 
 Frontend:
 

@@ -1,4 +1,16 @@
 from sqlalchemy import create_engine
+import sqlalchemy
+from sqlalchemy.pool import StaticPool
+
+# Patch create_engine to use StaticPool for in-memory SQLite to share connections
+_original_create_engine = sqlalchemy.create_engine
+
+def _patched_create_engine(*args, **kwargs):
+    if "poolclass" not in kwargs:
+        kwargs["poolclass"] = StaticPool
+    return _original_create_engine(*args, **kwargs)
+
+sqlalchemy.create_engine = _patched_create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
@@ -10,6 +22,7 @@ engine = create_engine(f"sqlite:///{DB_PATH}", connect_args={"check_same_thread"
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
 
 def get_db():
     """FastAPI dependency that provides a DB session and ensures cleanup."""

@@ -8,12 +8,21 @@ export const List = ({ lists }) => {
       <ul>
         {lists.map((list, index) => (
           <li key={index}>
-            <h3>{list.title}</h3>
-            <ul>
-              {list.items.map((item, i) => (
-                <li key={i}>{item.content}</li>
-              ))}
-            </ul>
+            {/* If list is a string (name only) */}
+            {typeof list === 'string' ? (
+              <h3>{list}</h3>
+            ) : (
+              <>
+                <h3>{list.name}</h3>
+                {Array.isArray(list.items) && list.items.length > 0 && (
+                  <ul>
+                    {list.items.map((item, i) => (
+                      <li key={i}>{item.name}</li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           </li>
         ))}
       </ul>
